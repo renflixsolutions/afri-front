@@ -1,0 +1,499 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Professional Beneficiary Management Platform Design System
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Core Background & Text */
+    --background: 0 0% 99%;
+    --foreground: 215 25% 27%;
+
+    /* Card System */
+    --card: 0 0% 100%;
+    --card-foreground: 215 25% 27%;
+
+    /* Popover System */
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 25% 27%;
+
+    /* ADFAID Foundation Blue Primary */
+    --primary: 211 79% 41%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 211 79% 35%;
+    --primary-variant: 208 88% 27%;
+
+    /* Foundation Red Secondary */
+    --secondary: 345 82% 57%;
+    --secondary-foreground: 0 0% 100%;
+
+    /* Elegant Muted */
+    --muted: 215 15% 95%;
+    --muted-foreground: 215 15% 60%;
+
+    /* Foundation Red Accent */
+    --accent: 345 82% 57%;
+    --accent-foreground: 0 0% 100%;
+
+    /* Status Colors */
+    --destructive: 0 65% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 100% 60%;
+    --warning-foreground: 0 0% 100%;
+
+    /* Borders & Inputs */
+    --border: 215 15% 88%;
+    --input: 215 15% 90%;
+    --ring: 211 79% 41%;
+
+    --radius: 0.75rem;
+
+    /* ADFAID Foundation Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(211 79% 41%), hsl(345 82% 57%));
+    --gradient-hero: linear-gradient(135deg, hsl(211 79% 41%) 0%, hsl(208 88% 27%) 50%, hsl(345 82% 57%) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(215 15% 98%) 100%);
+
+    /* Professional Shadows */
+    --shadow-card: 0 4px 24px -4px hsl(215 25% 27% / 0.08);
+    --shadow-elevated: 0 8px 40px -8px hsl(215 25% 27% / 0.12);
+    --shadow-primary: 0 8px 32px -8px hsl(211 79% 41% / 0.24);
+
+    /* Sidebar System - Dark theme for better contrast */
+    --sidebar-background: 215 25% 15%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 211 79% 41%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 215 25% 20%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 215 25% 25%;
+    --sidebar-ring: 211 79% 41%;
+  }
+
+  .dark {
+    --background: 215 28% 17%;
+    --foreground: 0 0% 98%;
+
+    --card: 215 28% 19%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 215 28% 19%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 211 79% 51%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 211 79% 45%;
+
+    --secondary: 345 82% 67%;
+    --secondary-foreground: 215 28% 17%;
+
+    --muted: 215 28% 23%;
+    --muted-foreground: 215 15% 70%;
+
+    --accent: 345 82% 67%;
+    --accent-foreground: 215 28% 17%;
+
+    --destructive: 0 65% 65%;
+    --destructive-foreground: 215 28% 17%;
+    --success: 142 71% 55%;
+    --success-foreground: 215 28% 17%;
+    --warning: 38 100% 70%;
+    --warning-foreground: 215 28% 17%;
+
+    --border: 215 28% 25%;
+    --input: 215 28% 25%;
+    --ring: 211 79% 51%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(211 79% 51%), hsl(345 82% 67%));
+    --gradient-hero: linear-gradient(135deg, hsl(211 79% 51%) 0%, hsl(208 88% 35%) 50%, hsl(345 82% 67%) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(215 28% 19%) 0%, hsl(215 28% 21%) 100%);
+
+    --shadow-card: 0 4px 24px -4px hsl(0 0% 0% / 0.16);
+    --shadow-elevated: 0 8px 40px -8px hsl(0 0% 0% / 0.24);
+    --shadow-primary: 0 8px 32px -8px hsl(211 79% 51% / 0.32);
+
+    --sidebar-background: 215 28% 15%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 211 79% 51%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 215 28% 23%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 215 28% 25%;
+    --sidebar-ring: 211 79% 51%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+}
+
+@layer components {
+  /* Professional Card Component */
+  .card-professional {
+    @apply bg-card border border-border rounded-xl shadow-[var(--shadow-card)] backdrop-blur-sm;
+    background: var(--gradient-card);
+  }
+
+  /* Hero Gradient Background */
+  .bg-hero-gradient {
+    background: var(--gradient-hero);
+  }
+
+  /* Elevated Shadow */
+  .shadow-elevated {
+    box-shadow: var(--shadow-elevated);
+  }
+
+  /* Primary Glow Effect */
+  .shadow-primary-glow {
+    box-shadow: var(--shadow-primary);
+  }
+
+  /* Status Indicator Styles */
+  .status-success {
+    @apply bg-success text-success-foreground;
+  }
+  
+  .status-warning {
+    @apply bg-warning text-warning-foreground;
+  }
+  
+  .status-error {
+    @apply bg-destructive text-destructive-foreground;
+  }
+
+  /* React Select Styling */
+  .react-select__control {
+    @apply !bg-background !border-input !min-h-10 !rounded-md;
+  }
+  
+  .react-select__control--is-focused {
+    @apply !border-ring !shadow-sm;
+  }
+  
+  .react-select__menu {
+    @apply !bg-popover !border !border-border !shadow-md !z-50;
+  }
+  
+  .react-select__option {
+    @apply !bg-popover !text-popover-foreground;
+  }
+  
+  .react-select__option--is-focused {
+    @apply !bg-accent !text-accent-foreground;
+  }
+  
+  .react-select__option--is-selected {
+    @apply !bg-primary !text-primary-foreground;
+  }
+  
+  .react-select__single-value {
+    @apply !text-foreground;
+  }
+  
+  .react-select__placeholder {
+    @apply !text-muted-foreground;
+  }
+
+  .react-select__input-container {
+    @apply !text-foreground;
+  }
+
+  /* Google Maps Autocomplete dropdown fix */
+  .pac-container {
+    @apply !bg-popover !border !border-border !shadow-elevated;
+    z-index: 100000 !important;
+    border-radius: 0.5rem !important;
+    margin-top: 4px !important;
+    pointer-events: auto !important;
+    position: fixed !important;
+  }
+
+  .pac-item {
+    @apply !text-foreground !border-border;
+    padding: 8px 12px !important;
+    cursor: pointer !important;
+    pointer-events: auto !important;
+    user-select: none !important;
+  }
+
+  .pac-item:hover {
+    @apply !bg-muted;
+  }
+
+  .pac-item-selected {
+    @apply !bg-muted;
+  }
+
+  .pac-item-query {
+    @apply !text-foreground;
+  }
+
+  .pac-matched {
+    @apply !text-primary !font-semibold;
+  }
+
+  /* React Select Custom Styles */
+  .react-select-container .react-select__control {
+    @apply border-input bg-background hover:border-ring transition-colors;
+    min-height: 40px;
+    border-radius: var(--radius);
+  }
+
+  .react-select-container .react-select__control--is-focused {
+    @apply border-ring ring-2 ring-ring/20;
+    box-shadow: none;
+  }
+
+  .react-select-container .react-select__control--is-disabled {
+    @apply bg-muted cursor-not-allowed opacity-50;
+  }
+
+  .react-select-container .react-select__value-container {
+    @apply px-3 py-1;
+  }
+
+  .react-select-container .react-select__placeholder {
+    @apply text-muted-foreground;
+  }
+
+  .react-select-container .react-select__single-value {
+    @apply text-foreground;
+  }
+
+  .react-select-container .react-select__input-container {
+    @apply text-foreground;
+  }
+
+  .react-select-container .react-select__menu {
+    @apply bg-popover border border-border shadow-lg;
+    border-radius: var(--radius);
+  }
+
+  .react-select-container .react-select__menu-list {
+    @apply p-1;
+  }
+
+  .react-select-container .react-select__option {
+    @apply px-3 py-2 cursor-pointer transition-colors;
+    border-radius: calc(var(--radius) - 2px);
+  }
+
+  .react-select-container .react-select__option--is-focused {
+    @apply bg-accent/10;
+  }
+
+  .react-select-container .react-select__option--is-selected {
+    @apply bg-primary text-primary-foreground;
+  }
+
+  .react-select-container .react-select__indicator-separator {
+    @apply bg-border;
+  }
+
+  .react-select-container .react-select__dropdown-indicator {
+    @apply text-muted-foreground hover:text-foreground transition-colors;
+  }
+
+  .react-select-container .react-select__clear-indicator {
+    @apply text-muted-foreground hover:text-foreground transition-colors cursor-pointer;
+  }
+
+  .react-select-container .react-select__loading-indicator {
+    @apply text-primary;
+  }
+
+  /* Dark mode support */
+  .dark .react-select-container .react-select__menu {
+    @apply bg-popover border-border;
+  }
+
+  .dark .react-select-container .react-select__option--is-focused {
+    @apply bg-accent/20;
+  }
+}
+
+@layer components {
+  /* CKEditor enhancements */
+  .rich-editor {
+    position: relative;
+    @apply border border-border rounded-lg bg-card shadow-sm;
+  }
+
+  .rich-editor__topbar {
+    @apply flex items-center justify-between px-3 py-2 border-b border-border bg-popover/60 backdrop-blur-sm rounded-t-lg;
+  }
+
+  .rich-editor__title {
+    @apply text-xs font-medium text-muted-foreground;
+  }
+
+  .rich-editor__hint {
+    @apply text-[11px] text-muted-foreground/80 px-3 py-2 border-t border-border rounded-b-lg;
+  }
+
+  /* Make the toolbar stick to the top of the editor container */
+  .rich-editor .ck-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    backdrop-filter: blur(6px);
+  }
+
+  /* Bigger, resizable editing area */
+  .rich-editor .ck-editor__editable_inline {
+    min-height: 520px; /* default bigger writing canvas */
+    max-height: 70vh;
+    overflow: auto;
+    resize: vertical; /* let users drag to make it taller */
+    border-radius: 0 0 0.5rem 0.5rem;
+    background: hsl(var(--card));
+  }
+
+  /* Fullscreen mode: overlay with generous space */
+  .rich-editor.fullscreen {
+    position: fixed;
+    inset: 24px;
+    z-index: 9999;
+    @apply bg-popover border border-border rounded-xl shadow-elevated p-0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .rich-editor.fullscreen .ck-editor__editable_inline {
+    min-height: calc(100vh - 220px);
+    max-height: calc(100vh - 220px);
+  }
+
+  .rich-editor.fullscreen .rich-editor__hint {
+    @apply rounded-b-xl;
+  }
+}
+
+@layer base {
+  /* Professional Beneficiary Management Platform Global Styles
+  1. All colors MUST be HSL.
+  2. Use CSS variables for colors, typography, spacing, etc.
+  3. Follow the design tokens and guidelines provided by the design system.
+  */
+
+  :root {
+    /* Core Colors */
+    --color-primary: 211 79% 41%;
+    --color-primary-hover: 211 79% 35%;
+    --color-primary-foreground: 0 0% 100%;
+    --color-secondary: 345 82% 57%;
+    --color-secondary-foreground: 0 0% 100%;
+    --color-accent: 345 82% 57%;
+    --color-accent-foreground: 0 0% 100%;
+    --color-destructive: 0 65% 55%;
+    --color-destructive-foreground: 0 0% 100%;
+    --color-success: 142 71% 45%;
+    --color-success-foreground: 0 0% 100%;
+    --color-warning: 38 100% 60%;
+    --color-warning-foreground: 0 0% 100%;
+
+    /* Neutral Colors */
+    --color-background: 0 0% 99%;
+    --color-background-muted: 215 15% 95%;
+    --color-card: 0 0% 100%;
+    --color-card-muted: 215 15% 98%;
+    --color-foreground: 215 25% 27%;
+    --color-foreground-muted: 215 15% 60%;
+    --color-border: 215 15% 88%;
+    --color-input: 215 15% 90%;
+    --color-ring: 211 79% 41%;
+    --color-shadow-card: 0 4px 24px -4px hsl(215 25% 27% / 0.08);
+    --color-shadow-elevated: 0 8px 40px -8px hsl(215 25% 27% / 0.12);
+    --color-shadow-primary: 0 8px 32px -8px hsl(211 79% 41% / 0.24);
+
+    /* Typography */
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    --font-serif: 'Merriweather', serif;
+    --font-mono: 'Courier New', Courier, monospace;
+    --font-heading: 600;
+    --font-body: 400;
+    --font-size-base: 1rem;
+    --font-size-lg: 1.125rem;
+    --font-size-xl: 1.5rem;
+    --line-height-base: 1.5;
+    --line-height-heading: 1.25;
+
+    /* Spacing */
+    --spacing-0: 0;
+    --spacing-1: 0.25rem;
+    --spacing-2: 0.5rem;
+    --spacing-3: 0.75rem;
+    --spacing-4: 1rem;
+    --spacing-5: 1.25rem;
+    --spacing-6: 1.5rem;
+    --spacing-7: 1.75rem;
+    --spacing-8: 2rem;
+    --spacing-9: 2.5rem;
+    --spacing-10: 3rem;
+
+    /* Borders & Radius */
+    --border-width: 1px;
+    --border-style: solid;
+    --border-color: var(--color-border);
+    --border-radius: 0.5rem;
+    --border-radius-sm: 0.25rem;
+    --border-radius-lg: 0.75rem;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px -1px hsl(0 0% 0% / 0.1);
+    --shadow-md: 0 4px 8px -2px hsl(0 0% 0% / 0.1);
+    --shadow-lg: 0 10px 20px -4px hsl(0 0% 0% / 0.1);
+    --shadow-xl: 0 20px 40px -8px hsl(0 0% 0% / 0.1);
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(211 79% 41%), hsl(345 82% 57%));
+    --gradient-hero: linear-gradient(135deg, hsl(211 79% 41%) 0%, hsl(208 88% 27%) 50%, hsl(345 82% 57%) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(215 15% 98%) 100%);
+  }
+
+  /* Dark mode variables */
+  .dark {
+    --color-background: 215 28% 17%;
+    --color-background-muted: 215 28% 23%;
+    --color-card: 215 28% 19%;
+    --color-card-muted: 215 28% 21%;
+    --color-foreground: 0 0% 98%;
+    --color-foreground-muted: 215 28% 17%;
+    --color-border: 215 28% 25%;
+    --color-input: 215 28% 25%;
+    --color-ring: 211 79% 51%;
+    --color-shadow-card: 0 4px 24px -4px hsl(0 0% 0% / 0.16);
+    --color-shadow-elevated: 0 8px 40px -8px hsl(0 0% 0% / 0.24);
+    --color-shadow-primary: 0 8px 32px -8px hsl(211 79% 51% / 0.32);
+
+    --color-primary: 211 79% 51%;
+    --color-primary-hover: 211 79% 45%;
+    --color-primary-foreground: 0 0% 100%;
+    --color-secondary: 345 82% 67%;
+    --color-secondary-foreground: 215 28% 17%;
+    --color-accent: 345 82% 67%;
+    --color-accent-foreground: 215 28% 17%;
+    --color-destructive: 0 65% 65%;
+    --color-destructive-foreground: 215 28% 17%;
+    --color-success: 142 71% 55%;
+    --color-success-foreground: 215 28% 17%;
+    --color-warning: 38 100% 70%;
+    --color-warning-foreground: 215 28% 17%;
+  }
+}
