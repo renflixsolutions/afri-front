@@ -42,6 +42,7 @@ const generalItems = [
     {title: "Scholarships", url: "/scholarships", icon: GraduationCap},
     {title: "Scholarship Applications", url: "/scholarship-applications", icon: Award},
     {title: "Language Courses", url: "/language-courses", icon: GraduationCap},
+    {title: "Enrollments", url: "/enrollments", icon: Users},
     {title: "Partners", url: "/partners", icon: Users},
     {title: "Payments", url: "/payments", icon: Calculator},
     {title: "Opportunity Requests", url: "/opportunity-requests", icon: FileCheck},

@@ -8,8 +8,8 @@ class ApiService {
   private client: AxiosInstance;
   private isRefreshing = false;
   private failedQueue: Array<{
-    resolve: (value: any) => void;
-    reject: (error: any) => void;
+    resolve: (value: unknown) => void;
+    reject: (error: unknown) => void;
   }> = [];
 
   constructor() {
@@ -130,7 +130,7 @@ class ApiService {
     );
   }
 
-  private processQueue(error: any, token: string | null = null) {
+  private processQueue(error: unknown, token: string | null = null) {
     this.failedQueue.forEach(({ resolve, reject }) => {
       if (error) {
         reject(error);
@@ -162,15 +162,15 @@ class ApiService {
     if (ENV.APP_MODE === 'PRODUCTION') {
       // Set cookies with secure options
       const expires = new Date(Date.now() + expiresAt * 1000);
-      Cookies.set('access_token', accessToken, { 
-        expires, 
-        secure: true, 
-        sameSite: 'strict' 
+      Cookies.set('access_token', accessToken, {
+        expires,
+        secure: true,
+        sameSite: 'strict'
       });
-      Cookies.set('refresh_token', refreshToken, { 
+      Cookies.set('refresh_token', refreshToken, {
         expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
-        secure: true, 
-        sameSite: 'strict' 
+        secure: true,
+        sameSite: 'strict'
       });
     } else {
       // Use localStorage for UAT
@@ -192,20 +192,34 @@ class ApiService {
       headers: {
         'X-Cf-Requestid': fingerprint,
       },
+      // ensure credentials flag when calling refresh endpoint
+      withCredentials: ENV.APP_MODE === 'PRODUCTION',
     };
 
-    const requestData = ENV.APP_MODE === 'UAT' 
-      ? { refresh_token: refreshToken }
-      : {};
+    const cookieRefresh = Cookies.get('refresh_token') || null;
+    // If the server cookie is present prefer server cookie (no body). If cookie is missing but we have a
+    // refresh token stored locally (e.g., running frontend on localhost), send it in the body as a fallback.
+    const requestData: unknown = (() => {
+      if (ENV.APP_MODE === 'UAT') return { refresh_token: refreshToken };
+      // PRODUCTION: send empty body when cookie exists, otherwise include local refresh token as fallback
+      return cookieRefresh ? {} : { refresh_token: refreshToken };
+    })();
 
-    // Add API-Key header for UAT mode
+    // Add API-Key header for UAT mode (legacy behavior)
     if (ENV.APP_MODE === 'UAT') {
       config.headers!['API-Key'] = refreshToken;
     }
 
+    // Helper to perform a request and return the parsed ApiResponse if successful
+    const doRequest = async (body: unknown, cfg: AxiosRequestConfig) => {
+      return this.client.post<ApiResponse<unknown>>('auth/refresh-token', body as any, cfg);
+    };
+
     try {
-      const response = await this.client.post<ApiResponse<any>>('auth/refresh-token', requestData, config);
-      
+      console.debug('Refreshing token', { url: `${ENV.BASE_URL}auth/refresh-token`, mode: ENV.APP_MODE, withCredentials: config.withCredentials, cookiePresent: !!cookieRefresh, requestData });
+      const response = await doRequest(requestData, config);
+      console.debug('Refresh token response', { status: response.status, data: response.data });
+
       if (response.data.status && response.data.data?.access_token) {
         const { access_token, refresh_token, token_expires_at } = response.data.data;
         this.setTokens(access_token, refresh_token, token_expires_at);
@@ -213,13 +227,106 @@ class ApiService {
       } else {
         throw new Error(response.data.message || 'Token refresh failed');
       }
-    } catch (error: any) {
-      console.error('Token refresh failed:', error);
+    } catch (error: unknown) {
+      console.error('Token refresh failed (initial attempt):', error);
+      const eResp = (error && typeof error === 'object') ? (error as { response?: { status?: number; data?: unknown } }).response : undefined;
+      if (eResp) {
+        console.error('Refresh response data (initial):', eResp.data);
+      }
 
-      // Check if it's a 403 error indicating the refresh token itself has expired
-      if (error.response?.status === 403 || error.response?.status === 401) {
+      // Prepare variants to try if initial attempt failed and we did send a refresh token
+      const sentRefresh = requestData && typeof requestData === 'object' && ((requestData as any).refresh_token || (requestData as any).refreshToken);
+
+      // 1) If we sent refresh_token in JSON and got a 400, try form-urlencoded with refresh_token
+      if (eResp?.status === 400 && sentRefresh && (requestData as any).refresh_token) {
+        try {
+          console.debug('Retrying token refresh using application/x-www-form-urlencoded (refresh_token)');
+          const form = new URLSearchParams();
+          form.append('refresh_token', (requestData as any).refresh_token);
+
+          const retryConfig: AxiosRequestConfig = {
+            headers: {
+              ...config.headers,
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            withCredentials: config.withCredentials,
+          };
+
+          const retryResponse = await this.client.post<ApiResponse<unknown>>('auth/refresh-token', form.toString(), retryConfig);
+          console.debug('Refresh token retry response', { status: retryResponse.status, data: retryResponse.data });
+
+          if (retryResponse.data.status && (retryResponse.data.data as any)?.access_token) {
+            const { access_token, refresh_token, token_expires_at } = retryResponse.data.data as any;
+            this.setTokens(access_token, refresh_token, token_expires_at);
+            return access_token;
+          } else {
+            console.error('Unexpected retry refresh response', retryResponse.data);
+            throw new Error((retryResponse.data as any).message || 'Token refresh retry failed');
+          }
+        } catch (retryErr: unknown) {
+          console.error('Token refresh retry failed (form refresh_token):', retryErr);
+          const rResp = (retryErr && typeof retryErr === 'object') ? (retryErr as { response?: { data?: unknown } }).response : undefined;
+          if (rResp) console.error('Retry response data:', rResp.data);
+          // continue to further fallbacks
+        }
+      }
+
+      // 2) Try camelCase JSON: { refreshToken }
+      if (sentRefresh) {
+        try {
+          console.debug('Retrying token refresh using JSON with camelCase field refreshToken');
+          const camelBody = { refreshToken: refreshToken };
+          const camelResponse = await doRequest(camelBody, config);
+          console.debug('CamelCase JSON response', { status: camelResponse.status, data: camelResponse.data });
+
+          if (camelResponse.data.status && (camelResponse.data.data as any)?.access_token) {
+            const { access_token, refresh_token, token_expires_at } = camelResponse.data.data as any;
+            this.setTokens(access_token, refresh_token, token_expires_at);
+            return access_token;
+          }
+        } catch (camelErr: unknown) {
+          console.error('CamelCase JSON attempt failed:', camelErr);
+          const cResp = (camelErr && typeof camelErr === 'object') ? (camelErr as { response?: { data?: unknown } }).response : undefined;
+          if (cResp) console.error('CamelCase response data:', cResp.data);
+        }
+
+        // 3) Try camelCase form-urlencoded
+        try {
+          console.debug('Retrying token refresh using form-urlencoded with camelCase field refreshToken');
+          const form2 = new URLSearchParams();
+          form2.append('refreshToken', refreshToken);
+          const retryConfig2: AxiosRequestConfig = {
+            headers: {
+              ...config.headers,
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            withCredentials: config.withCredentials,
+          };
+          const formResp = await this.client.post<ApiResponse<unknown>>('auth/refresh-token', form2.toString(), retryConfig2);
+          console.debug('CamelCase form response', { status: formResp.status, data: formResp.data });
+
+          if (formResp.data.status && (formResp.data.data as any)?.access_token) {
+            const { access_token, refresh_token, token_expires_at } = formResp.data.data as any;
+            this.setTokens(access_token, refresh_token, token_expires_at);
+            return access_token;
+          }
+        } catch (formErr: unknown) {
+          console.error('CamelCase form attempt failed:', formErr);
+          const fResp = (formErr && typeof formErr === 'object') ? (formErr as { response?: { data?: unknown } }).response : undefined;
+          if (fResp) console.error('CamelCase form response data:', fResp.data);
+        }
+      }
+
+      // Check if it's a 403/401 error indicating the refresh token itself has expired
+      if (eResp?.status === 403 || eResp?.status === 401) {
         console.log('Refresh token expired or invalid, triggering logout');
         throw new Error('Session expired - refresh token invalid');
+      }
+
+      // If server returned a message include it
+      const serverMsg = eResp?.data && typeof (eResp.data as any).message === 'string' ? (eResp.data as any).message : undefined;
+      if (serverMsg) {
+        throw new Error(serverMsg);
       }
 
       throw new Error('Failed to refresh authentication token');
@@ -247,24 +354,24 @@ class ApiService {
     this.setTokens(accessToken, refreshToken, expiresAt);
   }
 
-  public async get<T = any>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<ApiResponse<T>>> {
+  public async get<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<ApiResponse<T>>> {
     return this.client.get(url, config);
   }
 
-  public async post<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<ApiResponse<T>>> {
-    return this.client.post(url, data, config);
+  public async post<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<AxiosResponse<ApiResponse<T>>> {
+    return this.client.post(url, data as any, config);
   }
 
-  public async put<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<ApiResponse<T>>> {
-    return this.client.put(url, data, config);
+  public async put<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<AxiosResponse<ApiResponse<T>>> {
+    return this.client.put(url, data as any, config);
   }
 
-  public async delete<T = any>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<ApiResponse<T>>> {
+  public async delete<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<ApiResponse<T>>> {
     return this.client.delete(url, config);
   }
 
-  public async patch<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<ApiResponse<T>>> {
-    return this.client.patch(url, data, config);
+  public async patch<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<AxiosResponse<ApiResponse<T>>> {
+    return this.client.patch(url, data as any, config);
   }
 }
 

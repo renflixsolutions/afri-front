@@ -40,3 +40,37 @@ export interface LanguageCourseResponse {
   data: LanguageCourse;
 }
 
+// Enrollment types
+export interface Enrollment {
+  id: string;
+  full_name: string;
+  course_name: string;
+  bundle_id: number;
+  email: string;
+  phone: string;
+  preferred_timezone: string;
+  payment_reference: string;
+  status: string;
+  enrolled_at: string;
+}
+
+export interface EnrollmentsPaginationData {
+  current_page: number;
+  data: Enrollment[];
+  first_page_url: string;
+  from: number;
+  last_page: number;
+  last_page_url: string;
+  next_page_url: string | null;
+  path: string;
+  per_page: number;
+  prev_page_url: string | null;
+  to: number;
+  total: number;
+}
+
+export interface EnrollmentsResponse {
+  status: boolean;
+  message: string;
+  data: EnrollmentsPaginationData;
+}

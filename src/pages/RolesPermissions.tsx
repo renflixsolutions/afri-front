@@ -64,7 +64,7 @@ export default function RolesPermissions() {
   const handleEditRole = (role: Role) => {
     setSelectedRole(role);
     setRoleName(role.name);
-    // Convert permission codes to numbers since the API returns them as strings but permissions API uses numbers
+    // Select all permissions that are assigned to this role
     const permCodes = new Set(role.permissions.map(p => Number(p.code)));
     setSelectedPermissions(permCodes);
     setIsEditDialogOpen(true);

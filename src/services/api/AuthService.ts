@@ -1,8 +1,22 @@
 import apiService from './ApiService';
 import { encryptPassword } from '@/services/utils/crypto';
 import { getDeviceFingerprint } from '@/services/utils/fingerprint';
-import { ApiResponse, NonceResponse, AuthResponse, LoginRequest, User } from '@/types/api';
+import { NonceResponse, AuthResponse, LoginRequest, User } from '@/types/api';
 import { ENV } from '@/config/environment';
+
+// Helper to safely extract an error message from unknown errors without using `any`
+function extractErrorMessage(err: unknown, fallback = 'An error occurred'): string {
+  if (err && typeof err === 'object') {
+    const maybe = err as { response?: { data?: { message?: unknown } }; message?: unknown };
+    if (maybe.response && maybe.response.data && typeof maybe.response.data.message === 'string') {
+      return maybe.response.data.message;
+    }
+    if (typeof maybe.message === 'string') {
+      return maybe.message;
+    }
+  }
+  return fallback;
+}
 
 class AuthService {
   async getNonce(): Promise<string> {
@@ -12,11 +26,13 @@ class AuthService {
       if (response.data.status && response.data.data?.cf) {
         return response.data.data.cf;
       } else {
-        throw new Error(response.data.message || 'Failed to get nonce');
+        throw new Error(response.data.message );
       }
-    } catch (error: any) {
-      console.error('Get nonce error:', error);
-      throw new Error(error.response?.data?.message || 'Failed to get nonce');
+    } catch (err: unknown) {
+      // Extract message safely from unknown
+      const message = extractErrorMessage(err, 'Failed to get nonce');
+      console.error('Get nonce error:', err);
+      throw new Error(message);
     }
   }
 
@@ -63,9 +79,11 @@ class AuthService {
       } else {
         throw new Error(response.data.message || 'Login failed');
       }
-    } catch (error: any) {
-      console.error('Login error:', error);
-      throw new Error(error.response?.data?.message || error.message || 'Login failed');
+    } catch (err: unknown) {
+      // Normalize error
+      const message = extractErrorMessage(err, 'Login failed');
+      console.error('Login error:', err);
+      throw new Error(message);
     }
   }
 

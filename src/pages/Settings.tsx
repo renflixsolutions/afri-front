@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { settingsService } from '@/services/api/SettingsService';
 import { companySettingsService, CompanySettings } from '@/services/api/CompanySettingsService';
+import { servicePlanService } from '@/services/api/ServicePlanService';
 import {
   Table,
   TableBody,
@@ -16,7 +17,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Plus, DollarSign, Settings as SettingsIcon, RefreshCw, MoreHorizontal, Eye } from 'lucide-react';
+import { Loader2, Plus, DollarSign, Settings as SettingsIcon, RefreshCw, MoreHorizontal, Eye, Pencil, Trash, Package, CheckCircle, XCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
@@ -32,6 +33,18 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { ServicePlanDialog } from '@/components/ServicePlanDialog';
+import { ServicePlan, ServicePlanFormData } from '@/types/service-plans';
 
 export default function Settings() {
   const queryClient = useQueryClient();
@@ -57,13 +70,16 @@ export default function Settings() {
     address: '',
   });
 
+  // Service Plan state
+  const [planDialogOpen, setPlanDialogOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<ServicePlan | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [planToDelete, setPlanToDelete] = useState<ServicePlan | null>(null);
+
   // Fetch fee settings using React Query
   const { data: feeSettings = [], isLoading: loading, refetch } = useQuery({
     queryKey: ['feeSettings'],
-    queryFn: async () => {
-      const fees = await settingsService.getFeeSettings();
-      return fees;
-    },
+    queryFn: () => settingsService.getFeeSettings(),
   });
 
   // Mutation for creating/updating fee
@@ -81,8 +97,8 @@ export default function Settings() {
       setFeeDialogOpen(false);
       setFeeForm({ module: '', amount: '', currency: 'KES', type: 'fixed', percentage: '' });
     },
-    onError: (error: any) => {
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to save fee';
+    onError: (error: unknown) => {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save fee';
       toast({
         title: 'Error',
         description: errorMessage,
@@ -92,7 +108,7 @@ export default function Settings() {
   });
 
   // Fetch company settings
-  const { data: companySettingsData, isLoading: companyLoading, refetch: refetchCompany } = useQuery({
+  const { isLoading: companyLoading, refetch: refetchCompany } = useQuery({
     queryKey: ['companySettings'],
     queryFn: async () => {
       const settings = await companySettingsService.getCompanySettings();
@@ -113,8 +129,103 @@ export default function Settings() {
         className: 'bg-green-600 text-white border-green-700',
       });
     },
-    onError: (error: any) => {
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to update company settings';
+    onError: (error: unknown) => {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update company settings';
+      toast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Service Plans queries
+  const { data: servicePlans = [], isLoading: plansLoading, refetch: refetchPlans } = useQuery({
+    queryKey: ['servicePlans'],
+    queryFn: () => servicePlanService.getServicePlans(),
+    enabled: activeSubmenu === 'service-plans',
+  });
+
+  const { data: planStats } = useQuery({
+    queryKey: ['planStatistics'],
+    queryFn: () => servicePlanService.getStatistics(),
+    enabled: activeSubmenu === 'service-plans',
+  });
+
+  // Provide safe defaults for planStats
+  const safePlanStats = planStats || {
+    total_plans: 0,
+    active_plans: 0,
+    inactive_plans: 0,
+    by_module: {},
+    by_tier: {},
+  };
+
+  // Service Plan mutations
+  const createPlanMutation = useMutation({
+    mutationFn: (data: ServicePlanFormData) => servicePlanService.createServicePlan(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['servicePlans'] });
+      queryClient.invalidateQueries({ queryKey: ['planStatistics'] });
+      toast({
+        title: 'Success',
+        description: 'Service plan created successfully',
+        variant: 'default',
+        className: 'bg-green-600 text-white border-green-700',
+      });
+      setPlanDialogOpen(false);
+      setSelectedPlan(null);
+    },
+    onError: (error: unknown) => {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create service plan';
+      toast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const updatePlanMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<ServicePlanFormData> }) => servicePlanService.updateServicePlan(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['servicePlans'] });
+      queryClient.invalidateQueries({ queryKey: ['planStatistics'] });
+      toast({
+        title: 'Success',
+        description: 'Service plan updated successfully',
+        variant: 'default',
+        className: 'bg-green-600 text-white border-green-700',
+      });
+      setPlanDialogOpen(false);
+      setSelectedPlan(null);
+    },
+    onError: (error: unknown) => {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update service plan';
+      toast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const deletePlanMutation = useMutation({
+    mutationFn: (id: string) => servicePlanService.deleteServicePlan(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['servicePlans'] });
+      queryClient.invalidateQueries({ queryKey: ['planStatistics'] });
+      toast({
+        title: 'Success',
+        description: 'Service plan deleted successfully',
+        variant: 'default',
+        className: 'bg-green-600 text-white border-green-700',
+      });
+      setDeleteDialogOpen(false);
+      setPlanToDelete(null);
+    },
+    onError: (error: unknown) => {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete service plan';
       toast({
         title: 'Error',
         description: errorMessage,
@@ -220,7 +331,7 @@ export default function Settings() {
       }
 
       if (field === 'calculated_info') {
-        acc[module].calculated_info = setting.value as any;
+        acc[module].calculated_info = setting.value as Record<string, unknown> | null;
       } else {
         acc[module][field as 'amount' | 'currency' | 'type' | 'percentage'] = setting.value as string;
       }
@@ -232,10 +343,40 @@ export default function Settings() {
     currency: string;
     type: string;
     percentage: string;
-    calculated_info: any;
+    calculated_info: Record<string, unknown> | null;
   }>);
 
   const feeList = Object.values(groupedFees);
+
+  // Service Plan handlers
+  const handleAddPlan = () => {
+    setSelectedPlan(null);
+    setPlanDialogOpen(true);
+  };
+
+  const handleEditPlan = (plan: ServicePlan) => {
+    setSelectedPlan(plan);
+    setPlanDialogOpen(true);
+  };
+
+  const handleDeletePlan = (plan: ServicePlan) => {
+    setPlanToDelete(plan);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleSavePlan = (data: ServicePlanFormData) => {
+    if (selectedPlan) {
+      updatePlanMutation.mutate({ id: selectedPlan.id, data });
+    } else {
+      createPlanMutation.mutate(data);
+    }
+  };
+
+  const confirmDeletePlan = () => {
+    if (planToDelete) {
+      deletePlanMutation.mutate(planToDelete.id);
+    }
+  };
 
   // Sidebar menu items
   const submenuItems = [
@@ -251,13 +392,12 @@ export default function Settings() {
       icon: DollarSign,
       description: 'Configure module fees',
     },
-    // Add more submenu items here in the future
-    // {
-    //   id: 'payment-gateway',
-    //   label: 'Payment Gateway',
-    //   icon: CreditCard,
-    //   description: 'Payment gateway settings',
-    // },
+    {
+      id: 'service-plans',
+      label: 'Service Plans',
+      icon: Package,
+      description: 'Manage pricing plans',
+    },
   ];
 
   if (loading && feeSettings.length === 0) {
@@ -412,18 +552,18 @@ export default function Settings() {
                     <TableBody>
                       {feeList.length > 0 ? (
                         feeList.map((fee) => {
-                          const calcInfo = fee.calculated_info;
-                          const displayAmount = calcInfo?.fixed_amount || fee.amount || '0';
-                          const displayPercentage = calcInfo?.percentage || fee.percentage || '0';
-                          const displayType = calcInfo?.type || fee.type || 'fixed';
-                          const displayCurrency = calcInfo?.currency || fee.currency || 'KES';
+                          const calcInfo = fee.calculated_info as Record<string, unknown> | null;
+                          const displayAmount = String(calcInfo?.fixed_amount || fee.amount || '0');
+                          const displayPercentage = String(calcInfo?.percentage || fee.percentage || '0');
+                          const displayType = String(calcInfo?.type || fee.type || 'fixed');
+                          const displayCurrency = String(calcInfo?.currency || fee.currency || 'KES');
 
                           // Calculate the sample fee for percentage type
-                          const sampleCalculation = calcInfo?.sample_calculation;
+                          const sampleCalculation = calcInfo?.sample_calculation as Record<string, unknown> | undefined;
                           const baseAmount = parseFloat(displayAmount.toString());
                           const percentageValue = parseFloat(displayPercentage.toString());
                           const calculatedAmount = displayType === 'percentage'
-                            ? (sampleCalculation?.calculated_amount || (baseAmount * percentageValue / 100))
+                            ? ((sampleCalculation?.calculated_amount as number) || (baseAmount * percentageValue / 100))
                             : baseAmount;
 
                           return (
@@ -449,7 +589,7 @@ export default function Settings() {
                               </TableCell>
                               <TableCell className="font-mono">
                                 {displayType === 'percentage' ? (
-                                  <span className="text-green-600 font-semibold text-sm">{displayPercentage}%</span>
+                                  <span className="text-green-600 font-semibold text-sm">{String(displayPercentage)}%</span>
                                 ) : (
                                   <span className="text-muted-foreground">—</span>
                                 )}
@@ -481,7 +621,7 @@ export default function Settings() {
                                 )}
                               </TableCell>
                               <TableCell>
-                                <Badge variant="secondary">{displayCurrency}</Badge>
+                                <Badge variant="secondary">{String(displayCurrency)}</Badge>
                               </TableCell>
                               <TableCell className="text-right">
                                 <DropdownMenu>
@@ -494,10 +634,10 @@ export default function Settings() {
                                     <DropdownMenuItem onClick={() =>
                                       handleEditFee(
                                         fee.module,
-                                        displayAmount.toString(),
-                                        displayCurrency,
-                                        displayType,
-                                        displayPercentage.toString()
+                                        String(displayAmount),
+                                        String(displayCurrency),
+                                        String(displayType),
+                                        String(displayPercentage)
                                       )
                                     }>
                                       <Eye className="h-4 w-4 mr-2" />
@@ -615,6 +755,191 @@ export default function Settings() {
                 )}
               </CardContent>
             </Card>
+          )}
+
+          {activeSubmenu === 'service-plans' && (
+            <div className="space-y-6">
+              {/* Statistics Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground">Total Plans</p>
+                        <p className="text-2xl font-bold mt-1">{safePlanStats.total_plans}</p>
+                      </div>
+                      <Package className="h-8 w-8 text-blue-500" />
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground">Active Plans</p>
+                        <p className="text-2xl font-bold mt-1 text-green-600">{safePlanStats.active_plans}</p>
+                      </div>
+                      <CheckCircle className="h-8 w-8 text-green-500" />
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground">Inactive Plans</p>
+                        <p className="text-2xl font-bold mt-1 text-red-600">{safePlanStats.inactive_plans}</p>
+                      </div>
+                      <XCircle className="h-8 w-8 text-red-500" />
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground">Modules</p>
+                        <p className="text-2xl font-bold mt-1">{safePlanStats.by_module ? Object.keys(safePlanStats.by_module).length : 0}</p>
+                      </div>
+                      <SettingsIcon className="h-8 w-8 text-purple-500" />
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Service Plans Table */}
+              <Card>
+                <CardHeader>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <CardTitle>Service Plans Management</CardTitle>
+                      <CardDescription>
+                        Create and manage service plans for different modules (jobs, scholarships, opportunity requests)
+                      </CardDescription>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => refetchPlans()}
+                        variant="outline"
+                        size="sm"
+                        disabled={plansLoading}
+                      >
+                        {plansLoading ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <RefreshCw className="h-4 w-4" />
+                        )}
+                      </Button>
+                      <Button onClick={handleAddPlan}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Plan
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {plansLoading ? (
+                    <div className="flex justify-center py-8">
+                      <Loader2 className="h-8 w-8 animate-spin" />
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Module</TableHead>
+                          <TableHead>Tier</TableHead>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Price</TableHead>
+                          <TableHead>Features</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {servicePlans.length > 0 ? (
+                          servicePlans.map((plan) => (
+                            <TableRow key={plan.id}>
+                              <TableCell>
+                                <Badge variant="outline" className="capitalize">
+                                  {plan.module.replace(/_/g, ' ')}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant={
+                                    plan.tier === 'enterprise'
+                                      ? 'default'
+                                      : plan.tier === 'premium'
+                                      ? 'secondary'
+                                      : 'outline'
+                                  }
+                                  className="capitalize"
+                                >
+                                  {plan.tier}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="font-medium">{plan.name}</TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-1">
+                                  <DollarSign className="h-3 w-3" />
+                                  <span className="font-mono font-semibold">
+                                    {plan.formatted_price}
+                                  </span>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <span className="text-sm text-muted-foreground">
+                                  {plan.features?.length || 0} features
+                                </span>
+                              </TableCell>
+                              <TableCell>
+                                {plan.is_active ? (
+                                  <Badge className="bg-green-100 text-green-800">Active</Badge>
+                                ) : (
+                                  <Badge variant="secondary">Inactive</Badge>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="sm">
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => handleEditPlan(plan)}>
+                                      <Pencil className="h-4 w-4 mr-2" />
+                                      Edit Plan
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={() => handleDeletePlan(plan)}
+                                      className="text-destructive"
+                                    >
+                                      <Trash className="h-4 w-4 mr-2" />
+                                      Delete Plan
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        ) : (
+                          <TableRow>
+                            <TableCell colSpan={7} className="text-center py-8">
+                              <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                                <Package className="h-12 w-12 opacity-20" />
+                                <p className="text-lg font-medium">No service plans configured</p>
+                                <p className="text-sm">Click "Add Plan" to create your first service plan</p>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           )}
         </div>
       </div>
@@ -746,6 +1071,45 @@ export default function Settings() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Service Plan Dialog */}
+      <ServicePlanDialog
+        open={planDialogOpen}
+        onOpenChange={setPlanDialogOpen}
+        plan={selectedPlan}
+        onSave={handleSavePlan}
+        isSaving={createPlanMutation.isPending || updatePlanMutation.isPending}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the service plan "{planToDelete?.name}".
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletePlanMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeletePlan}
+              disabled={deletePlanMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deletePlanMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

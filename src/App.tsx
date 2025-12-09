@@ -21,6 +21,8 @@ import ScholarshipApplications from "./pages/ScholarshipApplications";
 import Settings from "./pages/Settings";
 import PaymentTransactionsList from "@/components/PaymentTransactionsList";
 import OpportunityRequests from "./pages/OpportunityRequests";
+import Enrollments from "./pages/Enrollments";
+
 
 const queryClient = new QueryClient();
 
@@ -79,6 +81,9 @@ const App = () => (
           </Route>
           <Route path="/opportunity-requests" element={<DashboardLayout />}>
             <Route index element={<OpportunityRequests />} />
+          </Route>
+          <Route path="/enrollments" element={<DashboardLayout />}>
+            <Route index element={<Enrollments />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

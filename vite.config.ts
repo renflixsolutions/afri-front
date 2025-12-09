@@ -8,7 +8,7 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
-    proxy: {
+    proxy: process.env.VITE_USE_PRODUCTION_API === 'true' ? undefined : {
       '/api': {
         target: 'http://localhost:8081',
         changeOrigin: true,
