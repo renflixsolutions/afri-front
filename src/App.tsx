@@ -19,9 +19,10 @@ import LanguageCourses from "./pages/LanguageCourses";
 import Scholarships from "./pages/Scholarships";
 import ScholarshipApplications from "./pages/ScholarshipApplications";
 import Settings from "./pages/Settings";
-import PaymentTransactionsList from "@/components/PaymentTransactionsList";
+import PaymentHistory from "./pages/PaymentHistory";
 import OpportunityRequests from "./pages/OpportunityRequests";
 import Enrollments from "./pages/Enrollments";
+import CourseTimetables from "./pages/CourseTimetables";
 
 
 const queryClient = new QueryClient();
@@ -77,13 +78,16 @@ const App = () => (
             <Route index element={<Partners />} />
           </Route>
           <Route path="/payments" element={<DashboardLayout />}>
-            <Route index element={<PaymentTransactionsList />} />
+            <Route index element={<PaymentHistory />} />
           </Route>
           <Route path="/opportunity-requests" element={<DashboardLayout />}>
             <Route index element={<OpportunityRequests />} />
           </Route>
           <Route path="/enrollments" element={<DashboardLayout />}>
             <Route index element={<Enrollments />} />
+          </Route>
+          <Route path="/course-timetables" element={<DashboardLayout />}>
+            <Route index element={<CourseTimetables />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
