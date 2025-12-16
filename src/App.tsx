@@ -23,6 +23,7 @@ import PaymentHistory from "./pages/PaymentHistory";
 import OpportunityRequests from "./pages/OpportunityRequests";
 import Enrollments from "./pages/Enrollments";
 import CourseTimetables from "./pages/CourseTimetables";
+import CourseFees from "./pages/CourseFees";
 
 
 const queryClient = new QueryClient();
@@ -88,6 +89,9 @@ const App = () => (
           </Route>
           <Route path="/course-timetables" element={<DashboardLayout />}>
             <Route index element={<CourseTimetables />} />
+          </Route>
+          <Route path="/course-fees" element={<DashboardLayout />}>
+            <Route index element={<CourseFees />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

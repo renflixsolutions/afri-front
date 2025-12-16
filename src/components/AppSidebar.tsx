@@ -16,7 +16,8 @@ import {
     HelpCircle,
     Phone,
     MessageCircle,
-    CalendarDays
+    CalendarDays,
+    CreditCard
 } from "lucide-react";
 import {NavLink, useLocation} from "react-router-dom";
 import {
@@ -44,6 +45,7 @@ const generalItems = [
     {title: "Scholarship Applications", url: "/scholarship-applications", icon: Award},
     {title: "Language Courses", url: "/language-courses", icon: GraduationCap},
     {title: "Course Timetables", url: "/course-timetables", icon: CalendarDays},
+    {title: "Course Fees", url: "/course-fees", icon: CreditCard},
     {title: "Enrollments", url: "/enrollments", icon: Users},
     {title: "Partners", url: "/partners", icon: Users},
     {title: "Payments", url: "/payments", icon: Calculator},
